@@ -6,23 +6,20 @@ import (
 )
 
 func main() {
-	numWorkers := 100
-	ch := make(chan int, numWorkers)
+	mutex := make(chan int, 1)
+	mutex <- 1 // Initialize the token
+
 	counter := 0
 	var wg sync.WaitGroup
-	for i := 0; i < numWorkers; i++ {
-		ch <- 1
-	}
-	close(ch)
-	wg.Add(numWorkers)
-	for i := 0; i < numWorkers; i++ {
-		go func() {
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func(id int) {
 			defer wg.Done()
-			<-ch
+			<-mutex // Lock: acquire the token
 			counter++
-		}()
+			mutex <- 1 // Unlock: release the token
+		}(i)
 	}
-
 	wg.Wait()
 	fmt.Println(counter)
 }
